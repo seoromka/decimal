@@ -1,0 +1,19 @@
+{
+    "name": "seoromka/decimal",
+    "description": "Decimal number PHP",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Roman Kostin",
+            "email": "kostin.r.a@mail.ru"
+        }
+    ],
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "Seoromka\\Decimal\\": "src/"
+        }
+    },
+    "require": {}
+}
