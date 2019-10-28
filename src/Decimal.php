@@ -573,7 +573,7 @@ class Decimal
      */
     public static function cleanValue($value): ?string
     {
-        if (s_int($value) || is_float($value)) {
+        if (is_int($value) || is_float($value)) {
             return (string) $value;
         }
 
