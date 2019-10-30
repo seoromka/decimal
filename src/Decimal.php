@@ -24,10 +24,10 @@ class Decimal
      */
     public function __construct($value = 0)
     {
-        if ($value instanceof self) {
+        if ($value instanceof static) {
             $this->copy($value);
         } else {
-            $clean = self::cleanValue($value);
+            $clean = static::cleanValue($value);
             if ($clean[0] === '-') {
                 $this->negative = true;
                 $clean = substr($clean, 1);
@@ -35,29 +35,29 @@ class Decimal
             // If the value contains an exponent specifier, parse and remove
             // it.
             $clean = strtolower($clean);
-            $pos = strrpos($clean, self::EXP_MARK);
+            $pos = strrpos($clean, static::EXP_MARK);
             if ($pos !== false) {
                 $this->exponent = (int) substr($clean, $pos + 1);
                 $clean = substr($clean, 0, $pos);
             }
             // Remove the period and decrease the exponent by one for each
             // digit following the period.
-            $pos = strpos($clean, self::RADIX_MARK);
+            $pos = strpos($clean, static::RADIX_MARK);
             if ($pos !== false) {
                 $clean = substr($clean, 0, $pos) . substr($clean, $pos + 1);
                 $this->exponent += ($pos - strlen($clean));
             }
             // Discard leading zeroes.
-            $clean = ltrim($clean, self::ZERO);
+            $clean = ltrim($clean, static::ZERO);
             // For integer values (non-negative exponents), remove trailing
             // zeroes and increase the exponent by one for each digit removed.
             if ($this->exponent >= 0) {
                 $len = strlen($clean);
-                $clean = rtrim($clean, self::ZERO);
+                $clean = rtrim($clean, static::ZERO);
                 $this->exponent += ($len - strlen($clean));
             }
 
-            $this->digits = $clean === '' ? self::ZERO : $clean;
+            $this->digits = $clean === '' ? static::ZERO : $clean;
         }
     }
 
@@ -98,7 +98,7 @@ class Decimal
      */
     public function compare($value): int
     {
-        $decimal = self::make($value);
+        $decimal = static::make($value);
         $scale = max($this->getScale(), $decimal->getScale());
 
         return bccomp($this, $decimal, $scale);
@@ -203,7 +203,7 @@ class Decimal
     /*
      * Return the absolute value of this Decimal as a new Decimal.
      */
-    public function abs(): Decimal
+    public function abs(): self
     {
         $result = new static($this);
         $result->negative = false;
@@ -214,7 +214,7 @@ class Decimal
     /*
      * Return the negation of this Decimal as a new Decimal.
      */
-    public function negation(): Decimal
+    public function negation(): self
     {
         $result = new static($this);
         $result->negative = ! $this->negative;
@@ -225,10 +225,10 @@ class Decimal
     /*
      * Add $value to this Decimal and return the sum as a new Decimal.
      */
-    public function add($value, $scale = null): Decimal
+    public function add($value, $scale = null): self
     {
-        $decimal = self::make($value);
-        $scale = self::resultScale($this, $decimal, $scale);
+        $decimal = static::make($value);
+        $scale = static::resultScale($this, $decimal, $scale);
 
         return new static(bcadd($this, $decimal, $scale));
     }
@@ -237,10 +237,10 @@ class Decimal
      * Subtract $value from this Decimal and return the difference as a new
      * Decimal.
      */
-    public function subtract($value, $scale = null): Decimal
+    public function subtract($value, $scale = null): self
     {
-        $decimal = self::make($value);
-        $scale = self::resultScale($this, $decimal, $scale);
+        $decimal = static::make($value);
+        $scale = static::resultScale($this, $decimal, $scale);
 
         return new static(bcsub($this, $decimal, $scale));
     }
@@ -250,7 +250,7 @@ class Decimal
      * @param null $scale
      * @return Decimal
      */
-    public function sub($value, $scale = null): Decimal
+    public function sub($value, $scale = null): self
     {
         return $this->subtract($value, $scale);
     }
@@ -258,11 +258,11 @@ class Decimal
     /*
      * Multiply this Decimal by $value and return the product as a new Decimal.
      */
-    public function multiply($value, $scale = null): Decimal
+    public function multiply($value, $scale = null): self
     {
-        $decimal = self::make($value);
+        $decimal = static::make($value);
 
-        if (! self::scaleValid($scale)) {
+        if (! static::scaleValid($scale)) {
             $scale = $this->getScale() + $decimal->getScale();
         }
 
@@ -274,7 +274,7 @@ class Decimal
      * @param null $scale
      * @return Decimal
      */
-    public function mul($value, $scale = null): Decimal
+    public function mul($value, $scale = null): self
     {
         return $this->multiply($value, $scale);
     }
@@ -286,15 +286,15 @@ class Decimal
      * @param null $scale
      * @return Decimal
      */
-    public function divide($value, $scale = null): Decimal
+    public function divide($value, $scale = null): self
     {
-        $decimal = self::make($value);
-
+        $decimal = static::make($value);
         if ($decimal->isZero()) {
             throw new DomainException('Cannot divide by zero.');
         }
 
-        $scale = self::resultScale($this, $decimal, $scale);
+        $scale = static::resultScale($this, $decimal, $scale);
+
         return new static(bcdiv($this, $decimal, $scale));
     }
 
@@ -303,7 +303,7 @@ class Decimal
      * @param null $scale
      * @return Decimal
      */
-    public function div($value, $scale = null): Decimal
+    public function div($value, $scale = null): self
     {
         return $this->divide($value, $scale);
     }
@@ -314,13 +314,13 @@ class Decimal
      * The default scale of the division will be equal to the exponent of this
      * Decimal plus one, if it is positive, otherwise it will be zero.
      */
-    public function inverse($scale = null): Decimal
+    public function inverse($scale = null): self
     {
-        if (! self::scaleValid($scale)) {
+        if (! static::scaleValid($scale)) {
             $scale = max(0, $this->exponent + 1);
         }
 
-        return self::one()->divide($this, $scale);
+        return static::one()->divide($this, $scale);
     }
 
     /*
@@ -388,22 +388,22 @@ class Decimal
      *
      * @return Decimal
      */
-    public function compress(): Decimal
+    public function compress(): self
     {
         $result = clone $this;
         $len = strlen($result->digits);
-        $result->digits = ltrim($result->digits, self::ZERO);
+        $result->digits = ltrim($result->digits, static::ZERO);
         $newlen = strlen($result->digits);
         if ($newlen > 0) {
             $result->exponent -= $len - $newlen;
         } else {
-            $result->digits = self::ZERO;
+            $result->digits = static::ZERO;
             $result->exponent = 0;
             $result->negative = false;
             return $result;
         }
 
-        $result->digits = rtrim($result->digits, self::ZERO);
+        $result->digits = rtrim($result->digits, static::ZERO);
         $result->exponent += $newlen - strlen($result->digits);
 
         return $result;
@@ -420,12 +420,12 @@ class Decimal
      * @param int $method The rounding method to use, if necessary.
      * @return Decimal
      */
-    public function quantize($exponent, $method = PHP_ROUND_HALF_UP): Decimal
+    public function quantize($exponent, $method = PHP_ROUND_HALF_UP): self
     {
         $result = $this->compress();
         $count = $result->exponent - $exponent;
         if ($exponent < $result->exponent) {
-            $result->digits .= self::zeroes($count);
+            $result->digits .= static::zeroes($count);
             $result->exponent = $exponent;
         } elseif($exponent > $result->exponent) {
             if ($result->exponent < 0) {
@@ -449,10 +449,10 @@ class Decimal
                 $result->increase($roundoff);
                 $result->digits = substr($result->digits, 0, $count);
                 if (strlen($result->digits) === 0) {
-                    $result->digits = self::ZERO;
+                    $result->digits = static::ZERO;
                 }
             } else {
-                $result->digits = self::zeroes(-$count) . $result->digits;
+                $result->digits = static::zeroes(-$count) . $result->digits;
             }
             $result->exponent = $exponent;
         }
@@ -468,7 +468,7 @@ class Decimal
      *         round() function.
      * @return Decimal
      */
-    public function round($places, $method = PHP_ROUND_HALF_UP): Decimal
+    public function round($places, $method = PHP_ROUND_HALF_UP): self
     {
         return $this->quantize(min(0, -$places), $method);
     }
@@ -487,11 +487,11 @@ class Decimal
      */
     public function __toString(): string
     {
-        if (! self::$raw_formatter instanceof DecimalFormatter) {
-            self::$raw_formatter = new DecimalFormatter(null, '', self::RADIX_MARK);
+        if (! static::$raw_formatter instanceof DecimalFormatter) {
+            static::$raw_formatter = new DecimalFormatter(null, '', static::RADIX_MARK);
         }
 
-        return self::$raw_formatter->format($this);
+        return static::$raw_formatter->format($this);
     }
 
     /**
@@ -553,11 +553,11 @@ class Decimal
      * it.
      *
      * @param mixed $value
-     * @return Decimal
+     * @return self
      */
-    public static function make($value): ?Decimal
+    public static function make($value)
     {
-        return $value instanceof self ? $value : new static($value);
+        return $value instanceof static ? $value : new static($value);
     }
 
     /**
@@ -577,20 +577,20 @@ class Decimal
             return (string) $value;
         }
 
-        $chars = '\d' . self::RADIX_MARK . self::EXP_MARK . '-';
+        $chars = '\d' . static::RADIX_MARK . static::EXP_MARK . '-';
         $clean = preg_replace("/[^$chars]/i", '', $value);
-        $clean = rtrim($clean, self::RADIX_MARK);
-        $radix = '[' . self::RADIX_MARK . ']';
+        $clean = rtrim($clean, static::RADIX_MARK);
+        $radix = '[' . static::RADIX_MARK . ']';
         $pattern = '/^-?(?:\d+(?:' . $radix . '\d*)?|' .
-            $radix . '\d+)(?:' . self::EXP_MARK . '-?\d*)?$/i';
+            $radix . '\d+)(?:' . static::EXP_MARK . '-?\d*)?$/i';
 
         if (! preg_match($pattern, $clean)) {
             throw new DomainException(
                 "Invalid Decimal value '$value'; " .
                 'must contain either an integer part, a fractional ' .
-                "part, or both, separated by '" . self::RADIX_MARK . "', " .
+                "part, or both, separated by '" . static::RADIX_MARK . "', " .
                 'optionally preceded by a sign specifier, optionally ' .
-                'followed by ' . self::EXP_MARK . 'and an integer exponent.');
+                'followed by ' . static::EXP_MARK . 'and an integer exponent.');
         }
 
         return $clean;
@@ -602,13 +602,13 @@ class Decimal
      * @param mixed,...
      * @return Decimal
      */
-    public static function max(): Decimal
+    public static function max(): self
     {
         $args = func_get_args();
         $result = null;
 
         foreach ($args as $arg) {
-            $dec = self::make($arg);
+            $dec = static::make($arg);
             if ($result === null || $result->lt($dec)) {
                 $result = $dec;
             }
@@ -623,13 +623,13 @@ class Decimal
      * @param mixed,...
      * @return Decimal
      */
-    public static function min(): Decimal
+    public static function min(): self
     {
         $args = func_get_args();
         $result = null;
 
         foreach ($args as $arg) {
-            $dec = self::make($arg);
+            $dec = static::make($arg);
             if ($result === null || $result->gt($dec)) {
                 $result = $dec;
             }
@@ -654,13 +654,13 @@ class Decimal
      *
      * @return Decimal
      */
-    public static function zero(): Decimal
+    public static function zero(): self
     {
-        if (! self::$zero instanceof self) {
-            self::$zero = new static(0);
+        if (! static::$zero instanceof self) {
+            static::$zero = new static(0);
         }
 
-        return self::$zero;
+        return static::$zero;
     }
 
     /**
@@ -668,13 +668,13 @@ class Decimal
      *
      * @return Decimal
      */
-    public static function one(): Decimal
+    public static function one(): self
     {
-        if (! self::$one instanceof self) {
-            self::$one = new static(1);
+        if (! static::$one instanceof self) {
+            static::$one = new static(1);
         }
 
-        return self::$one;
+        return static::$one;
     }
 
     /*
@@ -690,7 +690,7 @@ class Decimal
      */
     public static function resultScale(Decimal $a, Decimal $b, $scale = null)
     {
-        if (! self::scaleValid($scale)) {
+        if (! static::scaleValid($scale)) {
             $scale = max($a->getScale(), $b->getScale());
         }
 
@@ -705,6 +705,6 @@ class Decimal
      */
     public static function zeroes($length): string
     {
-        return str_repeat(self::ZERO, $length);
+        return str_repeat(static::ZERO, $length);
     }
 }
