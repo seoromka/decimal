@@ -54,7 +54,7 @@ class DecimalFormatter
                 $fracpart = Decimal::zeroes($scale - $len) . $fracpart;
             }
         }
-        if ($intpart === '') {
+        if ($intpart === '' || $intpart === false) {
             $intpart = Decimal::ZERO;
         }
 
